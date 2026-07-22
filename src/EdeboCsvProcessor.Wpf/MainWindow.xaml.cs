@@ -30,6 +30,16 @@ namespace EdeboCsvProcessor.Wpf
             _applicationsView.Filter = ApplicationFilter;
             ApplicationsDataGrid.ItemsSource = _applicationsView;
             
+            try
+            {
+                var mgr = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
+                VersionText.Text = "Версія: " + (mgr.IsInstalled ? mgr.CurrentVersion?.ToString() : "Dev");
+            }
+            catch
+            {
+                VersionText.Text = "Версія: невідомо";
+            }
+            
             // Background update check
             _ = UpdateAppAsync();
         }
@@ -47,7 +57,7 @@ namespace EdeboCsvProcessor.Wpf
                     
                     await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
                     {
-                        Application.Current.Dispatcher.Invoke(() => 
+                        System.Windows.Application.Current.Dispatcher.Invoke(() => 
                         {
                             UpdateProgressBar.Value = progress;
                             UpdatePercentageText.Text = $"{progress}%";
@@ -61,6 +71,45 @@ namespace EdeboCsvProcessor.Wpf
             }
             catch (Exception)
             {
+                UpdatePanel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void CheckUpdatesButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var updateManager = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
+                var updateInfo = await updateManager.CheckForUpdatesAsync();
+                
+                if (updateInfo != null)
+                {
+                    var result = MessageBox.Show($"Знайдено нову версію: {updateInfo.TargetFullRelease.Version}\nБажаєте оновити програму зараз?", "Оновлення", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        UpdatePanel.Visibility = Visibility.Visible;
+                        
+                        await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
+                        {
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                            {
+                                UpdateProgressBar.Value = progress;
+                                UpdatePercentageText.Text = $"{progress}%";
+                            });
+                        });
+                        
+                        UpdateStatusText.Text = "Перезапуск програми...";
+                        updateManager.ApplyUpdatesAndRestart(updateInfo);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("У вас встановлена остання версія програми.", "Оновлення", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Помилка під час перевірки оновлень: " + ex.Message, "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdatePanel.Visibility = Visibility.Collapsed;
             }
         }
