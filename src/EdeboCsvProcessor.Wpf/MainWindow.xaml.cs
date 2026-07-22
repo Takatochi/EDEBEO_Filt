@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -60,8 +60,8 @@ namespace EdeboCsvProcessor.Wpf
         {
             var openFileDialog = new OpenFileDialog
             {
-                Filter = "Підтримувані файли (*.csv, *.xlsx)|*.csv;*.xlsx|Всі файли (*.*)|*.*",
-                Title = "Оберіть файл з ЄДЕБО"
+                Filter = "РџС–РґС‚СЂРёРјСѓРІР°РЅС– С„Р°Р№Р»Рё (*.csv, *.xlsx)|*.csv;*.xlsx|Р’СЃС– С„Р°Р№Р»Рё (*.*)|*.*",
+                Title = "РћР±РµСЂС–С‚СЊ С„Р°Р№Р» Р· Р„Р”Р•Р‘Рћ"
             };
 
             if (openFileDialog.ShowDialog() == true)
@@ -75,7 +75,7 @@ namespace EdeboCsvProcessor.Wpf
         {
             try
             {
-                StatusTextBlock.Text = "Завантаження даних...";
+                StatusTextBlock.Text = "Р—Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ РґР°РЅРёС…...";
                 ExportButton.IsEnabled = false;
 
                 var apps = await Task.Run(() =>
@@ -104,12 +104,12 @@ namespace EdeboCsvProcessor.Wpf
                     if (!columnsAdded && app.RawData != null)
                     {
                         var keys = app.RawData.Keys.ToList();
-                        int phoneIndex = keys.FindIndex(k => k.IndexOf("телефон", System.StringComparison.OrdinalIgnoreCase) >= 0 || k.IndexOf("контактний номер", System.StringComparison.OrdinalIgnoreCase) >= 0);
+                        int phoneIndex = keys.FindIndex(k => k.IndexOf("С‚РµР»РµС„РѕРЅ", System.StringComparison.OrdinalIgnoreCase) >= 0 || k.IndexOf("РєРѕРЅС‚Р°РєС‚РЅРёР№ РЅРѕРјРµСЂ", System.StringComparison.OrdinalIgnoreCase) >= 0);
                         int grantIndex = phoneIndex >= 0 ? phoneIndex + 1 : keys.Count;
 
                         var grantColumn = new DataGridTextColumn
                         {
-                            Header = "Можливий грант",
+                            Header = "РњРѕР¶Р»РёРІРёР№ РіСЂР°РЅС‚",
                             Binding = new Binding("GrantStatus"),
                             FontWeight = FontWeights.Bold
                         };
@@ -138,19 +138,19 @@ namespace EdeboCsvProcessor.Wpf
                 }
 
                 var proposalList = uniqueProposals.OrderBy(x => x).ToList();
-                proposalList.Insert(0, "Всі пропозиції");
+                proposalList.Insert(0, "Р’СЃС– РїСЂРѕРїРѕР·РёС†С–С—");
                 ProposalComboBox.ItemsSource = proposalList;
                 ProposalComboBox.SelectedIndex = 0;
 
-                StatusTextBlock.Text = $"Завантажено {apps.Count} заяв. Фільтруйте та експортуйте.";
+                StatusTextBlock.Text = $"Р—Р°РІР°РЅС‚Р°Р¶РµРЅРѕ {apps.Count} Р·Р°СЏРІ. Р¤С–Р»СЊС‚СЂСѓР№С‚Рµ С‚Р° РµРєСЃРїРѕСЂС‚СѓР№С‚Рµ.";
                 StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(44, 62, 80));
                 ExportButton.IsEnabled = _applications.Count > 0;
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = $"Помилка завантаження: {ex.Message}";
+                StatusTextBlock.Text = $"РџРѕРјРёР»РєР° Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ: {ex.Message}";
                 StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60));
-                MessageBox.Show($"Не вдалося завантажити файл:\n{ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"РќРµ РІРґР°Р»РѕСЃСЏ Р·Р°РІР°РЅС‚Р°Р¶РёС‚Рё С„Р°Р№Р»:\n{ex.Message}", "РџРѕРјРёР»РєР°", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -204,7 +204,7 @@ namespace EdeboCsvProcessor.Wpf
 
             // Proposal Filter
             string selectedProposal = ProposalComboBox.SelectedItem as string ?? ProposalComboBox.Text;
-            if (!string.IsNullOrWhiteSpace(selectedProposal) && selectedProposal != "Всі пропозиції")
+            if (!string.IsNullOrWhiteSpace(selectedProposal) && selectedProposal != "Р’СЃС– РїСЂРѕРїРѕР·РёС†С–С—")
             {
                 if (app.Proposal == null || !app.Proposal.Name.Contains(selectedProposal, StringComparison.OrdinalIgnoreCase))
                     return false;
@@ -234,8 +234,8 @@ namespace EdeboCsvProcessor.Wpf
         {
             var saveFileDialog = new SaveFileDialog
             {
-                Filter = "Excel файли (*.xlsx)|*.xlsx",
-                Title = "Зберегти результат як",
+                Filter = "Excel С„Р°Р№Р»Рё (*.xlsx)|*.xlsx",
+                Title = "Р—Р±РµСЂРµРіС‚Рё СЂРµР·СѓР»СЊС‚Р°С‚ СЏРє",
                 DefaultExt = ".xlsx",
                 FileName = "Exported_Result.xlsx"
             };
@@ -244,7 +244,7 @@ namespace EdeboCsvProcessor.Wpf
             {
                 try
                 {
-                    StatusTextBlock.Text = "Збереження в Excel...";
+                    StatusTextBlock.Text = "Р—Р±РµСЂРµР¶РµРЅРЅСЏ РІ Excel...";
                     ExportButton.IsEnabled = false;
 
                     var filteredApps = _applicationsView.Cast<DomainApplication>().ToList();
@@ -262,15 +262,15 @@ namespace EdeboCsvProcessor.Wpf
                         exportUseCase.Execute(filteredApps, outputPath, orderedColumns);
                     });
 
-                    StatusTextBlock.Text = $"✅ Успішно експортовано {filteredApps.Count} заяв.";
+                    StatusTextBlock.Text = $"вњ… РЈСЃРїС–С€РЅРѕ РµРєСЃРїРѕСЂС‚РѕРІР°РЅРѕ {filteredApps.Count} Р·Р°СЏРІ.";
                     StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(39, 174, 96));
-                    MessageBox.Show("Експорт успішно завершено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Р•РєСЃРїРѕСЂС‚ СѓСЃРїС–С€РЅРѕ Р·Р°РІРµСЂС€РµРЅРѕ!", "РЈСЃРїС–С…", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    StatusTextBlock.Text = $"❌ Помилка експорту: {ex.Message}";
+                    StatusTextBlock.Text = $"вќЊ РџРѕРјРёР»РєР° РµРєСЃРїРѕСЂС‚Сѓ: {ex.Message}";
                     StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60));
-                    MessageBox.Show($"Помилка при збереженні:\n{ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"РџРѕРјРёР»РєР° РїСЂРё Р·Р±РµСЂРµР¶РµРЅРЅС–:\n{ex.Message}", "РџРѕРјРёР»РєР°", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {
