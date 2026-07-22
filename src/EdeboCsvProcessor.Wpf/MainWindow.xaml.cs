@@ -38,8 +38,7 @@ namespace EdeboCsvProcessor.Wpf
         {
             try
             {
-                // TODO: Replace with the actual GitHub repo URL provided by the user
-                var updateManager = new UpdateManager(new GithubSource("https://github.com/nazer/EdeboCsvProcessor", null, false));
+                var updateManager = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
                 var updateInfo = await updateManager.CheckForUpdatesAsync();
                 
                 if (updateInfo != null)
