@@ -17,7 +17,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -77,8 +76,16 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="15,0,0,0">
-                    <TextBlock Text="Пропозиція:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,5,0"/>
-                    <ComboBox x:Name="ProposalComboBox" Width="200" Padding="3" SelectionChanged="FilterChanged" IsEditable="True"/>
+                    <TextBlock Text="Статус:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,5,0"/>
+                    <ComboBox x:Name="StatusComboBox" Width="120" Padding="3" SelectionChanged="FilterChanged" IsEditable="True"/>
+                    <TextBlock Text="Пропозиція:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="10,0,5,0"/>
+                    <ComboBox x:Name="ProposalComboBox" Width="140" Padding="3" SelectionChanged="FilterChanged" IsEditable="True"/>
+                    <TextBlock Text="Бюджет:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="10,0,5,0"/>
+                    <ComboBox x:Name="BudgetComboBox" Width="70" Padding="3" SelectionChanged="FilterChanged">
+                        <ComboBoxItem Content="Всі" IsSelected="True"/>
+                        <ComboBoxItem Content="Так"/>
+                        <ComboBoxItem Content="Ні"/>
+                    </ComboBox>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="15,0,0,0">
@@ -119,55 +126,41 @@
             
             <TextBlock x:Name="StatusTextBlock" Text="Готово до роботи. Відкрийте файл для перегляду." VerticalAlignment="Center" Foreground="#7F8C8D" TextWrapping="Wrap"/>
             
-            <Button Grid.Column="1" x:Name="ExportButton" Content="Експортувати в Excel" FontSize="16" FontWeight="Bold" 
-                    Padding="20,10" Background="#2ECC71" Foreground="White" BorderThickness="0" Cursor="Hand" Click="ExportButton_Click"
-                    IsEnabled="False">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.9"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#BDC3C7"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </Grid>
-            <!-- Update Status Panel -->
-        <Grid Grid.Row="4" Margin="0,15,0,0" x:Name="UpdatePanel" Visibility="Collapsed">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="UpdateStatusText" Text="Завантаження оновлення..." Foreground="#2980B9" FontWeight="Bold" VerticalAlignment="Center"/>
-            <ProgressBar x:Name="UpdateProgressBar" Grid.Column="1" Margin="15,0" Height="15" Value="0" Maximum="100" Foreground="#2980B9" Background="#E0E6ED" BorderThickness="0"/>
-            <TextBlock x:Name="UpdatePercentageText" Grid.Column="2" Text="0%" Foreground="#2980B9" FontWeight="Bold" VerticalAlignment="Center" Width="40" TextAlignment="Right"/>
-        </Grid>
-
-        <!-- Footer / Version Info -->
-        <Grid Grid.Row="5" Margin="0,15,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="VersionText" Text="Версія: " Foreground="#95A5A6" VerticalAlignment="Center"/>
-            <Button Grid.Column="2" Content="Перевірити оновлення" Padding="10,5" Background="#ECF0F1" Foreground="#34495E" BorderThickness="0" Cursor="Hand" Click="CheckUpdatesButton_Click">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#BDC3C7"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="StatisticsButton" Content="📊 Статистика" FontSize="16" FontWeight="Bold" Margin="0,0,10,0"
+                        Padding="20,10" Background="#3498DB" Foreground="White" BorderThickness="0" Cursor="Hand" Click="StatisticsButton_Click"
+                        IsEnabled="False">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="0.9"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#BDC3C7"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                
+                <Button x:Name="ExportButton" Content="Експортувати в Excel" FontSize="16" FontWeight="Bold" 
+                        Padding="20,10" Background="#2ECC71" Foreground="White" BorderThickness="0" Cursor="Hand" Click="ExportButton_Click"
+                        IsEnabled="False">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="0.9"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#BDC3C7"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
-

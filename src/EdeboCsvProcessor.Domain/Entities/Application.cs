@@ -12,7 +12,13 @@ public class Application
     public IReadOnlyList<double> Scores { get; }
     public System.Collections.Generic.Dictionary<string, string> RawData { get; }
     
+    public bool IsOriginalSubmitted { get; }
+    public bool IsContractSigned { get; }
+    public int? Priority { get; }
+    public bool IsContractApplication { get; }
+    
     public string GrantStatus => Scores.Count(s => s >= 150) >= 2 ? "Так" : "Ні";
+    public string ClaimsBudget { get; }
 
     public Application(System.Collections.Generic.Dictionary<string, string> rawData)
     {
@@ -56,6 +62,35 @@ public class Application
             }
         }
         Scores = scores;
+        
+        // Extended attributes for statistics
+        IsOriginalSubmitted = GetRawValue("Ознака наявності оригіналів документів", "Ознака оригіналу", "Оригінал")?.Contains("Так", System.StringComparison.OrdinalIgnoreCase) == true 
+                           || GetRawValue("Ознака наявності оригіналів документів", "Ознака оригіналу", "Оригінал")?.Contains("+") == true;
+                           
+        IsContractSigned = GetRawValue("Ознака укладеного договору", "Договір", "Статус договору")?.Contains("Так", System.StringComparison.OrdinalIgnoreCase) == true
+                        || GetRawValue("Ознака укладеного договору", "Договір", "Статус договору")?.Contains("+") == true
+                        || Status?.Contains("Включено до наказу") == true;
+                        
+        var prioStr = GetRawValue("Пріоритет", "Пріоритетність");
+        if (int.TryParse(prioStr, out var prio)) 
+            Priority = prio;
+            
+        var contractMark = GetRawValue("Ознака 'Вступ виключно за кошти фізичних та/або юридичних осіб'", "Виключно контракт", "Ознака контракту");
+        IsContractApplication = contractMark?.Contains("Так", System.StringComparison.OrdinalIgnoreCase) == true 
+                             || contractMark?.Contains("+") == true
+                             || contractMark?.Contains("1") == true
+                             || GetRawValue("Джерело фінансування", "Тип пропозиції")?.Contains("Контракт", System.StringComparison.OrdinalIgnoreCase) == true
+                             || (!Priority.HasValue && Status?.Contains("Допущено") == true);
+                             
+        var explicitBudget = GetRawValue("Претендує на бюджет");
+        if (!string.IsNullOrWhiteSpace(explicitBudget))
+        {
+            ClaimsBudget = explicitBudget.Contains("Так", System.StringComparison.OrdinalIgnoreCase) || explicitBudget.Contains("+") || explicitBudget.Contains("1") ? "Так" : "Ні";
+        }
+        else
+        {
+            ClaimsBudget = IsContractApplication ? "Ні" : "Так";
+        }
     }
 
     private string? GetRawValue(params string[] possibleKeys)

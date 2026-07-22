@@ -30,16 +30,6 @@ namespace EdeboCsvProcessor.Wpf
             _applicationsView.Filter = ApplicationFilter;
             ApplicationsDataGrid.ItemsSource = _applicationsView;
             
-            try
-            {
-                var mgr = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
-                VersionText.Text = "Версія: " + (mgr.IsInstalled ? mgr.CurrentVersion?.ToString() : "Dev");
-            }
-            catch
-            {
-                VersionText.Text = "Версія: невідомо";
-            }
-            
             // Background update check
             _ = UpdateAppAsync();
         }
@@ -53,64 +43,16 @@ namespace EdeboCsvProcessor.Wpf
                 
                 if (updateInfo != null)
                 {
-                    UpdatePanel.Visibility = Visibility.Visible;
+                    // New update available, download it
+                    await updateManager.DownloadUpdatesAsync(updateInfo);
                     
-                    await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
-                    {
-                        System.Windows.Application.Current.Dispatcher.Invoke(() => 
-                        {
-                            UpdateProgressBar.Value = progress;
-                            UpdatePercentageText.Text = $"{progress}%";
-                        });
-                    });
-                    
-                    UpdateStatusText.Text = "Перезапуск програми...";
-                    
+                    // Apply the update and restart the app
                     updateManager.ApplyUpdatesAndRestart(updateInfo);
                 }
             }
-            catch (Exception)
+            catch
             {
-                UpdatePanel.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private async void CheckUpdatesButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var updateManager = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
-                var updateInfo = await updateManager.CheckForUpdatesAsync();
-                
-                if (updateInfo != null)
-                {
-                    var result = MessageBox.Show($"Знайдено нову версію: {updateInfo.TargetFullRelease.Version}\nБажаєте оновити програму зараз?", "Оновлення", MessageBoxButton.YesNo, MessageBoxImage.Information);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        UpdatePanel.Visibility = Visibility.Visible;
-                        
-                        await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
-                        {
-                            System.Windows.Application.Current.Dispatcher.Invoke(() => 
-                            {
-                                UpdateProgressBar.Value = progress;
-                                UpdatePercentageText.Text = $"{progress}%";
-                            });
-                        });
-                        
-                        UpdateStatusText.Text = "Перезапуск програми...";
-                        updateManager.ApplyUpdatesAndRestart(updateInfo);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("У вас встановлена остання версія програми.", "Оновлення", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Помилка під час перевірки оновлень: " + ex.Message, "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                UpdatePanel.Visibility = Visibility.Collapsed;
+                // Ignore update errors so it doesn't interrupt the user
             }
         }
 
@@ -135,6 +77,7 @@ namespace EdeboCsvProcessor.Wpf
             {
                 StatusTextBlock.Text = "Завантаження даних...";
                 ExportButton.IsEnabled = false;
+                StatisticsButton.IsEnabled = false;
 
                 var apps = await Task.Run(() =>
                 {
@@ -172,13 +115,25 @@ namespace EdeboCsvProcessor.Wpf
                             FontWeight = FontWeights.Bold
                         };
 
+                        var budgetColumn = new DataGridTextColumn
+                        {
+                            Header = "Претендує на бюджет",
+                            Binding = new Binding("ClaimsBudget"),
+                            FontWeight = FontWeights.Bold,
+                            Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(46, 204, 113))
+                        };
+
                         for (int i = 0; i < keys.Count; i++)
                         {
                             if (i == grantIndex)
                             {
                                 ApplicationsDataGrid.Columns.Add(grantColumn);
+                                ApplicationsDataGrid.Columns.Add(budgetColumn);
                             }
                             
+                            if (keys[i].Equals("Претендує на бюджет", StringComparison.OrdinalIgnoreCase))
+                                continue;
+
                             ApplicationsDataGrid.Columns.Add(new DataGridTextColumn
                             {
                                 Header = keys[i],
@@ -189,6 +144,7 @@ namespace EdeboCsvProcessor.Wpf
                         if (grantIndex == keys.Count)
                         {
                             ApplicationsDataGrid.Columns.Add(grantColumn);
+                            ApplicationsDataGrid.Columns.Add(budgetColumn);
                         }
 
                         columnsAdded = true;
@@ -200,9 +156,19 @@ namespace EdeboCsvProcessor.Wpf
                 ProposalComboBox.ItemsSource = proposalList;
                 ProposalComboBox.SelectedIndex = 0;
 
-                StatusTextBlock.Text = $"Завантажено {apps.Count} заяв. Фільтруйте та експортуйте.";
+                var uniqueStatuses = apps
+                    .Where(a => !string.IsNullOrEmpty(a.Status))
+                    .Select(a => a.Status!)
+                    .Distinct()
+                    .ToList();
+                    
+                var statusList = new List<string> { "Всі статуси", "Без відмов", "Тільки відмови" };
+                statusList.AddRange(uniqueStatuses.OrderBy(x => x));
+                StatusComboBox.ItemsSource = statusList;
+                StatusComboBox.SelectedIndex = 0;                StatusTextBlock.Text = $"Завантажено {apps.Count} заяв. Фільтруйте та експортуйте.";
                 StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(44, 62, 80));
                 ExportButton.IsEnabled = _applications.Count > 0;
+                StatisticsButton.IsEnabled = _applications.Count > 0;
             }
             catch (Exception ex)
             {
@@ -243,49 +209,109 @@ namespace EdeboCsvProcessor.Wpf
             DateToPicker.SelectedDate = null;
             if (ProposalComboBox.Items.Count > 0)
                 ProposalComboBox.SelectedIndex = 0;
+            if (StatusComboBox.Items.Count > 0)
+                StatusComboBox.SelectedIndex = 0;
+            if (BudgetComboBox.Items.Count > 0)
+                BudgetComboBox.SelectedIndex = 0;
         }
 
         private bool ApplicationFilter(object item)
         {
-            if (item is not DomainApplication app) return false;
-
-            // Date Filters
-            if (DateFromPicker.SelectedDate.HasValue && app.SubmissionDate != null && app.SubmissionDate.Value < DateFromPicker.SelectedDate.Value)
-                return false;
-
-            if (DateToPicker.SelectedDate.HasValue && app.SubmissionDate != null)
+            try
             {
-                var endOfDay = DateToPicker.SelectedDate.Value.AddDays(1).AddTicks(-1);
-                if (app.SubmissionDate.Value > endOfDay)
+                if (item is not DomainApplication app) return false;
+
+                // Date Filters
+                if (DateFromPicker.SelectedDate.HasValue && app.SubmissionDate != null && app.SubmissionDate.Value < DateFromPicker.SelectedDate.Value)
                     return false;
-            }
 
-            // Proposal Filter
-            string selectedProposal = ProposalComboBox.SelectedItem as string ?? ProposalComboBox.Text;
-            if (!string.IsNullOrWhiteSpace(selectedProposal) && selectedProposal != "Всі пропозиції")
-            {
-                if (app.Proposal == null || !app.Proposal.Name.Contains(selectedProposal, StringComparison.OrdinalIgnoreCase))
-                    return false;
-            }
-
-            // Global Search Filter
-            string searchText = SearchTextBox.Text?.Trim().ToLower() ?? "";
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                bool matches = false;
-                foreach (var val in app.RawData.Values)
+                if (DateToPicker.SelectedDate.HasValue && app.SubmissionDate != null)
                 {
-                    if (val != null && val.ToLower().Contains(searchText))
+                    var endOfDay = DateToPicker.SelectedDate.Value.AddDays(1).AddTicks(-1);
+                    if (app.SubmissionDate.Value > endOfDay)
+                        return false;
+                }
+
+                // Proposal Filter
+                string selectedProposal = ProposalComboBox.SelectedItem as string ?? ProposalComboBox.Text;
+                if (!string.IsNullOrWhiteSpace(selectedProposal) && selectedProposal != "Всі пропозиції")
+                {
+                    if (app.Proposal == null || !app.Proposal.Name.Contains(selectedProposal, StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+
+                // Global Search Filter
+                string searchText = SearchTextBox.Text?.Trim().ToLower() ?? "";
+                if (!string.IsNullOrEmpty(searchText))
+                {
+                    bool matches = false;
+                    foreach (var val in app.RawData.Values)
                     {
-                        matches = true;
-                        break;
+                        if (val != null && val.ToLower().Contains(searchText))
+                        {
+                            matches = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!matches) return false;
+                }
+
+                // Status Filter
+                string selectedStatus = StatusComboBox.SelectedItem as string ?? StatusComboBox.Text;
+                if (!string.IsNullOrWhiteSpace(selectedStatus) && selectedStatus != "Всі статуси")
+                {
+                    if (selectedStatus == "Без відмов")
+                    {
+                        if (app.Status != null && (
+                            app.Status.Contains("Відмовлено", StringComparison.OrdinalIgnoreCase) ||
+                            app.Status.Contains("Відхилено", StringComparison.OrdinalIgnoreCase) ||
+                            app.Status.Contains("Скасовано", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            return false;
+                        }
+                    }
+                    else if (selectedStatus == "Тільки відмови")
+                    {
+                        if (app.Status == null || !(
+                            app.Status.Contains("Відмовлено", StringComparison.OrdinalIgnoreCase) ||
+                            app.Status.Contains("Відхилено", StringComparison.OrdinalIgnoreCase) ||
+                            app.Status.Contains("Скасовано", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (app.Status == null || !app.Status.Contains(selectedStatus, StringComparison.OrdinalIgnoreCase))
+                            return false;
                     }
                 }
-                
-                if (!matches) return false;
-            }
 
-            return true;
+                // Budget Filter
+                if (BudgetComboBox.SelectedItem is System.Windows.Controls.ComboBoxItem budgetItem)
+                {
+                    if (budgetItem.Content != null)
+                    {
+                        string budgetSelection = budgetItem.Content.ToString() ?? "";
+                        if (budgetSelection == "Так" && app.ClaimsBudget != "Так")
+                            return false;
+                        if (budgetSelection == "Ні" && app.ClaimsBudget != "Ні")
+                            return false;
+                    }
+                }
+                else if (BudgetComboBox.SelectedItem is string budgetStr)
+                {
+                    if (budgetStr == "Так" && app.ClaimsBudget != "Так") return false;
+                    if (budgetStr == "Ні" && app.ClaimsBudget != "Ні") return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return true; // Fallback so we don't hide everything on error
+            }
         }
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
@@ -304,6 +330,7 @@ namespace EdeboCsvProcessor.Wpf
                 {
                     StatusTextBlock.Text = "Збереження в Excel...";
                     ExportButton.IsEnabled = false;
+                    StatisticsButton.IsEnabled = false;
 
                     var filteredApps = _applicationsView.Cast<DomainApplication>().ToList();
                     string outputPath = saveFileDialog.FileName;
@@ -333,7 +360,26 @@ namespace EdeboCsvProcessor.Wpf
                 finally
                 {
                     ExportButton.IsEnabled = true;
+                    StatisticsButton.IsEnabled = true;
                 }
+            }
+        }
+
+        private void StatisticsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var filteredApplications = _applicationsView.Cast<DomainApplication>();
+                var useCase = new CalculateStatisticsUseCase();
+                var result = useCase.Execute(filteredApplications);
+                
+                var statsWindow = new StatisticsWindow(result);
+                statsWindow.Owner = this;
+                statsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка при зборі статистики: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
