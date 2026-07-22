@@ -282,7 +282,7 @@ namespace EdeboCsvProcessor.Wpf
         private void HideColumn_Click(object sender, RoutedEventArgs e)
         {
             if (e.OriginalSource is MenuItem menuItem && 
-                menuItem.Parent is ContextMenu contextMenu &&
+                menuItem.Parent is System.Windows.Controls.ContextMenu contextMenu &&
                 contextMenu.PlacementTarget is System.Windows.Controls.Primitives.DataGridColumnHeader header)
             {
                 if (header.Column != null)
@@ -290,6 +290,15 @@ namespace EdeboCsvProcessor.Wpf
                     header.Column.Visibility = Visibility.Collapsed;
                 }
             }
+        }
+        
+        private void DonateButton_Click(object sender, RoutedEventArgs e)
+        {
+            var paymentWindow = new PaymentWindow
+            {
+                Owner = this
+            };
+            paymentWindow.ShowDialog();
         }
     }
 }

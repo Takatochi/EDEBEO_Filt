@@ -1,0 +1,59 @@
+﻿<Window x:Class="EdeboCsvProcessor.Wpf.PaymentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Оплата ліцензії 💸" Height="300" Width="450"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F6F8"
+        FontFamily="Segoe UI">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="⚠️ Увага: Неліцензійна версія!" 
+                   FontSize="20" FontWeight="Bold" Foreground="#E74C3C" 
+                   HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" FontSize="16" TextAlignment="Center" Foreground="#2C3E50">
+            Жарт! Ця програма абсолютно безкоштовна. 
+            <LineBreak/><LineBreak/>
+            Але якщо ви дуже хочете, можете переказати 1,000,000 ₴ розробнику на каву ☕.
+            Списати кошти з вашої банківської картки прямо зараз?
+        </TextBlock>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+            <Button Content="💸 Так, забрати всі гроші!" Width="180" Height="40" 
+                    Background="#2ECC71" Foreground="White" FontWeight="Bold" 
+                    Margin="0,0,10,0" BorderThickness="0" Cursor="Hand"
+                    Click="PayButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            
+            <Button Content="Я жадібний 😢" Width="120" Height="40" 
+                    Background="#95A5A6" Foreground="White" 
+                    BorderThickness="0" Cursor="Hand"
+                    Click="CancelButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>
