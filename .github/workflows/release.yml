@@ -1,0 +1,46 @@
+﻿name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on new tags like v1.0.0
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Publish WPF App
+      run: |
+        dotnet publish src/EdeboCsvProcessor.Wpf/EdeboCsvProcessor.Wpf.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish_output
+        
+    - name: Install vpk (Velopack)
+      run: dotnet tool install -g vpk
+
+    - name: Pack with Velopack
+      run: |
+        vpk pack -u EdeboCsvProcessor -v ${{ github.ref_name }} -p publish_output -o releases
+        
+    - name: Create Portable Zip
+      run: Compress-Archive -Path publish_output\* -DestinationPath releases\EdeboCsvProcessor-Portable-${{ github.ref_name }}.zip
+
+    - name: Release to GitHub
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          releases/Setup.exe
+          releases/*.nupkg
+          releases/RELEASES*
+          releases/*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
