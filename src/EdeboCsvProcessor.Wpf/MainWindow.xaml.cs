@@ -29,6 +29,15 @@ namespace EdeboCsvProcessor.Wpf
             _applicationsView = CollectionViewSource.GetDefaultView(_applications);
             _applicationsView.Filter = ApplicationFilter;
             ApplicationsDataGrid.ItemsSource = _applicationsView;
+            try
+            {
+                var mgr = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
+                VersionText.Text = "Версія: " + (mgr.IsInstalled ? mgr.CurrentVersion?.ToString() : "Dev");
+            }
+            catch
+            {
+                VersionText.Text = "Версія: невідомо";
+            }
             
             // Background update check
             _ = UpdateAppAsync();
@@ -43,16 +52,63 @@ namespace EdeboCsvProcessor.Wpf
                 
                 if (updateInfo != null)
                 {
-                    // New update available, download it
-                    await updateManager.DownloadUpdatesAsync(updateInfo);
+                    UpdatePanel.Visibility = Visibility.Visible;
                     
-                    // Apply the update and restart the app
+                    await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                        {
+                            UpdateProgressBar.Value = progress;
+                            UpdatePercentageText.Text = $"{progress}%";
+                        });
+                    });
+                    
+                    UpdateStatusText.Text = "Перезапуск програми...";
                     updateManager.ApplyUpdatesAndRestart(updateInfo);
                 }
             }
             catch
             {
                 // Ignore update errors so it doesn't interrupt the user
+            }
+        }
+
+        private async void CheckUpdatesButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var updateManager = new UpdateManager(new GithubSource("https://github.com/Takatochi/EDEBEO_Filt", null, false));
+                var updateInfo = await updateManager.CheckForUpdatesAsync();
+                
+                if (updateInfo != null)
+                {
+                    var result = MessageBox.Show($"Знайдено нову версію: {updateInfo.TargetFullRelease.Version}\nБажаєте оновити програму зараз?", "Оновлення", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        UpdatePanel.Visibility = Visibility.Visible;
+                        
+                        await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
+                        {
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                            {
+                                UpdateProgressBar.Value = progress;
+                                UpdatePercentageText.Text = $"{progress}%";
+                            });
+                        });
+                        
+                        UpdateStatusText.Text = "Перезапуск програми...";
+                        updateManager.ApplyUpdatesAndRestart(updateInfo);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("У вас встановлена остання версія програми.", "Оновлення", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Помилка під час перевірки оновлень: " + ex.Message, "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                UpdatePanel.Visibility = Visibility.Collapsed;
             }
         }
 

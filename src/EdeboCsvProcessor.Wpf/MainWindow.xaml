@@ -17,6 +17,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -161,6 +162,39 @@
                     </Button.Style>
                 </Button>
             </StackPanel>
+        </Grid>
+
+        <!-- Update Status Panel -->
+        <Grid Grid.Row="4" Margin="0,15,0,0" x:Name="UpdatePanel" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="UpdateStatusText" Text="Завантаження оновлення..." Foreground="#2980B9" FontWeight="Bold" VerticalAlignment="Center"/>
+            <ProgressBar x:Name="UpdateProgressBar" Grid.Column="1" Margin="15,0" Height="15" Value="0" Maximum="100" Foreground="#2980B9" Background="#E0E6ED" BorderThickness="0"/>
+            <TextBlock x:Name="UpdatePercentageText" Grid.Column="2" Text="0%" Foreground="#2980B9" FontWeight="Bold" VerticalAlignment="Center" Width="40" TextAlignment="Right"/>
+        </Grid>
+
+        <!-- Footer / Version Info -->
+        <Grid Grid.Row="5" Margin="0,15,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="VersionText" Text="Версія: " Foreground="#95A5A6" VerticalAlignment="Center"/>
+            <Button Grid.Column="2" Content="Перевірити оновлення" Padding="10,5" Background="#ECF0F1" Foreground="#34495E" BorderThickness="0" Cursor="Hand" Click="CheckUpdatesButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#BDC3C7"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
         </Grid>
     </Grid>
 </Window>
