@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -43,16 +43,25 @@ namespace EdeboCsvProcessor.Wpf
                 
                 if (updateInfo != null)
                 {
-                    // New update available, download it
-                    await updateManager.DownloadUpdatesAsync(updateInfo);
+                    UpdatePanel.Visibility = Visibility.Visible;
                     
-                    // Apply the update and restart the app
+                    await updateManager.DownloadUpdatesAsync(updateInfo, progress => 
+                    {
+                        Application.Current.Dispatcher.Invoke(() => 
+                        {
+                            UpdateProgressBar.Value = progress;
+                            UpdatePercentageText.Text = $"{progress}%";
+                        });
+                    });
+                    
+                    UpdateStatusText.Text = "Перезапуск програми...";
+                    
                     updateManager.ApplyUpdatesAndRestart(updateInfo);
                 }
             }
-            catch
+            catch (Exception)
             {
-                // Ignore update errors so it doesn't interrupt the user
+                UpdatePanel.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -60,8 +69,8 @@ namespace EdeboCsvProcessor.Wpf
         {
             var openFileDialog = new OpenFileDialog
             {
-                Filter = "РџС–РґС‚СЂРёРјСѓРІР°РЅС– С„Р°Р№Р»Рё (*.csv, *.xlsx)|*.csv;*.xlsx|Р’СЃС– С„Р°Р№Р»Рё (*.*)|*.*",
-                Title = "РћР±РµСЂС–С‚СЊ С„Р°Р№Р» Р· Р„Р”Р•Р‘Рћ"
+                Filter = "Підтримувані файли (*.csv, *.xlsx)|*.csv;*.xlsx|Всі файли (*.*)|*.*",
+                Title = "Оберіть файл з ЄДЕБО"
             };
 
             if (openFileDialog.ShowDialog() == true)
@@ -75,7 +84,7 @@ namespace EdeboCsvProcessor.Wpf
         {
             try
             {
-                StatusTextBlock.Text = "Р—Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ РґР°РЅРёС…...";
+                StatusTextBlock.Text = "Завантаження даних...";
                 ExportButton.IsEnabled = false;
 
                 var apps = await Task.Run(() =>
@@ -104,12 +113,12 @@ namespace EdeboCsvProcessor.Wpf
                     if (!columnsAdded && app.RawData != null)
                     {
                         var keys = app.RawData.Keys.ToList();
-                        int phoneIndex = keys.FindIndex(k => k.IndexOf("С‚РµР»РµС„РѕРЅ", System.StringComparison.OrdinalIgnoreCase) >= 0 || k.IndexOf("РєРѕРЅС‚Р°РєС‚РЅРёР№ РЅРѕРјРµСЂ", System.StringComparison.OrdinalIgnoreCase) >= 0);
+                        int phoneIndex = keys.FindIndex(k => k.IndexOf("телефон", System.StringComparison.OrdinalIgnoreCase) >= 0 || k.IndexOf("контактний номер", System.StringComparison.OrdinalIgnoreCase) >= 0);
                         int grantIndex = phoneIndex >= 0 ? phoneIndex + 1 : keys.Count;
 
                         var grantColumn = new DataGridTextColumn
                         {
-                            Header = "РњРѕР¶Р»РёРІРёР№ РіСЂР°РЅС‚",
+                            Header = "Можливий грант",
                             Binding = new Binding("GrantStatus"),
                             FontWeight = FontWeights.Bold
                         };
@@ -138,19 +147,19 @@ namespace EdeboCsvProcessor.Wpf
                 }
 
                 var proposalList = uniqueProposals.OrderBy(x => x).ToList();
-                proposalList.Insert(0, "Р’СЃС– РїСЂРѕРїРѕР·РёС†С–С—");
+                proposalList.Insert(0, "Всі пропозиції");
                 ProposalComboBox.ItemsSource = proposalList;
                 ProposalComboBox.SelectedIndex = 0;
 
-                StatusTextBlock.Text = $"Р—Р°РІР°РЅС‚Р°Р¶РµРЅРѕ {apps.Count} Р·Р°СЏРІ. Р¤С–Р»СЊС‚СЂСѓР№С‚Рµ С‚Р° РµРєСЃРїРѕСЂС‚СѓР№С‚Рµ.";
+                StatusTextBlock.Text = $"Завантажено {apps.Count} заяв. Фільтруйте та експортуйте.";
                 StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(44, 62, 80));
                 ExportButton.IsEnabled = _applications.Count > 0;
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = $"РџРѕРјРёР»РєР° Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ: {ex.Message}";
+                StatusTextBlock.Text = $"Помилка завантаження: {ex.Message}";
                 StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60));
-                MessageBox.Show($"РќРµ РІРґР°Р»РѕСЃСЏ Р·Р°РІР°РЅС‚Р°Р¶РёС‚Рё С„Р°Р№Р»:\n{ex.Message}", "РџРѕРјРёР»РєР°", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Не вдалося завантажити файл:\n{ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -204,7 +213,7 @@ namespace EdeboCsvProcessor.Wpf
 
             // Proposal Filter
             string selectedProposal = ProposalComboBox.SelectedItem as string ?? ProposalComboBox.Text;
-            if (!string.IsNullOrWhiteSpace(selectedProposal) && selectedProposal != "Р’СЃС– РїСЂРѕРїРѕР·РёС†С–С—")
+            if (!string.IsNullOrWhiteSpace(selectedProposal) && selectedProposal != "Всі пропозиції")
             {
                 if (app.Proposal == null || !app.Proposal.Name.Contains(selectedProposal, StringComparison.OrdinalIgnoreCase))
                     return false;
@@ -234,8 +243,8 @@ namespace EdeboCsvProcessor.Wpf
         {
             var saveFileDialog = new SaveFileDialog
             {
-                Filter = "Excel С„Р°Р№Р»Рё (*.xlsx)|*.xlsx",
-                Title = "Р—Р±РµСЂРµРіС‚Рё СЂРµР·СѓР»СЊС‚Р°С‚ СЏРє",
+                Filter = "Excel файли (*.xlsx)|*.xlsx",
+                Title = "Зберегти результат як",
                 DefaultExt = ".xlsx",
                 FileName = "Exported_Result.xlsx"
             };
@@ -244,7 +253,7 @@ namespace EdeboCsvProcessor.Wpf
             {
                 try
                 {
-                    StatusTextBlock.Text = "Р—Р±РµСЂРµР¶РµРЅРЅСЏ РІ Excel...";
+                    StatusTextBlock.Text = "Збереження в Excel...";
                     ExportButton.IsEnabled = false;
 
                     var filteredApps = _applicationsView.Cast<DomainApplication>().ToList();
@@ -262,15 +271,15 @@ namespace EdeboCsvProcessor.Wpf
                         exportUseCase.Execute(filteredApps, outputPath, orderedColumns);
                     });
 
-                    StatusTextBlock.Text = $"вњ… РЈСЃРїС–С€РЅРѕ РµРєСЃРїРѕСЂС‚РѕРІР°РЅРѕ {filteredApps.Count} Р·Р°СЏРІ.";
+                    StatusTextBlock.Text = $"✅ Успішно експортовано {filteredApps.Count} заяв.";
                     StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(39, 174, 96));
-                    MessageBox.Show("Р•РєСЃРїРѕСЂС‚ СѓСЃРїС–С€РЅРѕ Р·Р°РІРµСЂС€РµРЅРѕ!", "РЈСЃРїС–С…", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Експорт успішно завершено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    StatusTextBlock.Text = $"вќЊ РџРѕРјРёР»РєР° РµРєСЃРїРѕСЂС‚Сѓ: {ex.Message}";
+                    StatusTextBlock.Text = $"❌ Помилка експорту: {ex.Message}";
                     StatusTextBlock.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60));
-                    MessageBox.Show($"РџРѕРјРёР»РєР° РїСЂРё Р·Р±РµСЂРµР¶РµРЅРЅС–:\n{ex.Message}", "РџРѕРјРёР»РєР°", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Помилка при збереженні:\n{ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {
