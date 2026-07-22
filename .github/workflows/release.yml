@@ -29,10 +29,13 @@ jobs:
 
     - name: Pack with Velopack
       run: |
-        vpk pack -u EdeboCsvProcessor -v ${{ github.ref_name }} -p publish_output -o releases --mainExe EdeboCsvProcessor.Wpf.exe
+        $VERSION = "${{ github.ref_name }}".TrimStart('v')
+        vpk pack -u EdeboCsvProcessor -v $VERSION -p publish_output -o releases --mainExe EdeboCsvProcessor.Wpf.exe
         
     - name: Create Portable Zip
-      run: Compress-Archive -Path publish_output\* -DestinationPath releases\EdeboCsvProcessor-Portable-${{ github.ref_name }}.zip
+      run: |
+        $VERSION = "${{ github.ref_name }}".TrimStart('v')
+        Compress-Archive -Path publish_output\* -DestinationPath releases\EdeboCsvProcessor-Portable-$VERSION.zip
 
     - name: Release to GitHub
       uses: softprops/action-gh-release@v2
